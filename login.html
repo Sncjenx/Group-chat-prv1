@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Connexion / Inscription</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="login-page">
+  <div class="login-container">
+    <h2>🔐 Connexion / Inscription</h2>
+    {% if message %}
+      <div class="message error">{{ message }}</div>
+    {% endif %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for cat, m in messages %}
+          <div class="message {{ cat }}">{{ m }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    <form method="post" autocomplete="off">
+      <input type="text" name="nickname" placeholder="Pseudo" required>
+      <input type="password" name="password" placeholder="Mot de passe" required>
+      <button type="submit">Entrer</button>
+    </form>
+    <p class="hint">Le compte est créé automatiquement s’il n’existe pas.</p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>💬 Chat — {{ nickname|e }}</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body>
+  <header class="header">
+    <h1>💬 Chat</h1>
+    <div class="controls">
+      <span class="user">Connecté : <strong>{{ nickname|e }}</strong></span>
+      <button id="dark-toggle">🌙</button>
+      <a href="{{ url_for('logout') }}"><button id="logout">Déconnexion</button></a>
+    </div>
+  </header>
+
+  <main id="chat-area">
+    <ul id="messages">
+      {% for item in history or [] %}
+        {% if item is mapping %}
+          {% set nick = item.get('nickname', 'Anonyme') %}
+          {% set msg = item.get('message', '') %}
+          {% set color = item.get('color', '#ffffff') %}
+          <li>
+            <strong class="nickname" data-color="{{ color|e }}">{{ nick|e }}:</strong> {{ msg|e }}
+          </li>
+        {% else %}
+          <li><em>{{ item|e }}</em></li>
+        {% endif %}
+      {% endfor %}
+    </ul>
+  </main>
+
+  <form id="form" autocomplete="off">
+    <input id="input" placeholder="Écris ton message..." required />
+    <button type="submit">Envoyer</button>
+  </form>
+
+<script>
+  const socket = io();
+  const nickname = "{{ nickname|e }}";
+  const messages = document.getElementById('messages');
+  const form = document.getElementById('form');
+  const input = document.getElementById('input');
+  const darkToggle = document.getElementById('dark-toggle');
+
+  // Join event
+  socket.emit('join', { nickname });
+
+  // Apply nick colors for existing messages
+  function applyNickColors(root = document) {
+    root.querySelectorAll('.nickname').forEach(el => {
+      const c = el.getAttribute('data-color');
+      if (c) el.style.color = c;
+    });
+  }
+  applyNickColors();
+
+  // Receive messages
+  socket.on('message', (data) => {
+    if (!data) return;
+    const li = document.createElement('li');
+    if (data.nickname && data.message) {
+      const strong = document.createElement('strong');
+      strong.textContent = `${data.nickname}:`;
+      strong.className = 'nickname';
+      strong.style.color = data.color || '#ffffff';
+      li.appendChild(strong);
+      li.appendChild(document.createTextNode(' ' + data.message));
+    } else if (data.message) {
+      const em = document.createElement('em');
+      em.textContent = data.message;
+      li.appendChild(em);
+    }
+    messages.appendChild(li);
+    messages.scrollTop = messages.scrollHeight;
+  });
+
+  // Send messages
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
+    socket.emit('message', { nickname, message: text });
+    input.value = '';
+  });
+
+  // Dark mode toggle
+  darkToggle.addEventListener('click', () => {
+    document.body.classList.toggle('dark');
+    localStorage.setItem('dark', document.body.classList.contains('dark') ? '1' : '0');
+  });
+
+  // Load dark mode preference
+  if (localStorage.getItem('dark') === '1') document.body.classList.add('dark');
+</script>
+</body>
+</html>
